@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>MOB Catalogue Dispatcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+/* ── RESET & BASE ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overscroll-behavior: none; }
+
+/* ── DESIGN TOKENS ────────────────────────────────────────── */
+:root {
+  --navy:       #0A243F;
+  --navy-mid:   #0D2F52;
+  --green:      #00DE9D;
+  --green-dark: #00A876;
+  --green-faint:#F0FDF8;
+  --white:      #ffffff;
+  --bg:         #F4F7FA;
+  --card:       #ffffff;
+  --border:     #E4EAF0;
+  --border-mid: #D0DAE6;
+  --text:       #0A243F;
+  --muted:      #7A90A4;
+  --light:      #EBF9F4;
+  --radius-sm:  8px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+}
+
+/* ── TOPBAR ───────────────────────────────────────────────── */
+.topbar {
+  background: var(--navy);
+  padding: 0 24px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+.logo-area { display: flex; align-items: center; gap: 10px; }
+.logo-box {
+  width: 36px; height: 36px;
+  background: var(--green);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-weight: 500; font-size: 12px;
+  color: var(--navy);
+  flex-shrink: 0;
+  /* Replace src with your actual logo PNG: */
+  /* background-image: url('logo.png'); background-size: contain; background-repeat: no-repeat; background-position: center; */
+}
+.logo-text  { color: var(--white); font-size: 15px; font-weight: 600; letter-spacing: -0.3px; line-height: 1.2; }
+.logo-sub   { color: rgba(255,255,255,0.4); font-size: 11px; }
+.cart-btn {
+  background: var(--green);
+  border: none; border-radius: var(--radius-sm);
+  padding: 7px 15px;
+  color: var(--navy);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: background 0.15s;
+  min-height: 38px;
+}
+.cart-btn:hover { background: #00c98e; }
+.cart-badge {
+  background: var(--navy); color: var(--green);
+  border-radius: 50%;
+  width: 20px; height: 20px;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  flex-shrink: 0;
+}
+
+/* ── MAIN ─────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  padding: 28px 24px 180px;
+  max-width: 880px;
+  margin: 0 auto;
+  width: 100%;
+}
+.page-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 12px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.page-title { font-size: 21px; font-weight: 600; color: var(--navy); letter-spacing: -0.4px; }
+.page-sub   { color: var(--muted); font-size: 13px; margin-top: 4px; }
+
+.refresh-btn {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 15px;
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 7px;
+  transition: all 0.15s;
+  white-space: nowrap;
+  min-height: 38px;
+  flex-shrink: 0;
+}
+.refresh-btn:hover { border-color: var(--green); color: var(--navy); }
+.refresh-btn.spinning svg { animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SEARCH ───────────────────────────────────────────────── */
+.search-wrap { position: relative; margin-bottom: 20px; }
+.search-icon {
+  position: absolute; left: 13px; top: 50%;
+  transform: translateY(-50%); pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 11px 44px 11px 42px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px; color: var(--navy);
+  background: var(--card);
+  outline: none;
+  transition: border-color 0.15s;
+  -webkit-appearance: none;
+}
+.search-input:focus { border-color: var(--green); }
+.search-input::placeholder { color: var(--muted); }
+.search-clear {
+  position: absolute; right: 11px; top: 50%;
+  transform: translateY(-50%);
+  background: var(--muted); border: none; border-radius: 50%;
+  width: 22px; height: 22px;
+  cursor: pointer;
+  display: none; align-items: center; justify-content: center;
+  color: white; font-size: 12px; font-weight: 700;
+  line-height: 1; padding: 0;
+  transition: background 0.15s;
+}
+.search-clear:hover { background: var(--navy); }
+.search-clear.show { display: flex; }
+
+/* ── TABS ─────────────────────────────────────────────────── */
+.tabs-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 24px; }
+.tab {
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 13px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+  min-height: 36px;
+  display: flex; align-items: center;
+}
+.tab:hover { border-color: var(--green); color: var(--navy); }
+.tab.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+
+/* ── CATEGORY SECTION ─────────────────────────────────────── */
+.category-section { margin-bottom: 30px; }
+.cat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; padding-bottom: 11px;
+  border-bottom: 1.5px solid var(--border);
+}
+.cat-title-row { display: flex; align-items: center; gap: 10px; }
+.cat-initial {
+  width: 30px; height: 30px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px; font-weight: 500;
+  flex-shrink: 0;
+}
+.cat-name  { font-size: 15px; font-weight: 600; color: var(--navy); }
+.cat-count {
+  background: var(--light); color: var(--green-dark);
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 50px;
+  font-family: 'DM Mono', monospace;
+}
+.select-all-btn {
+  background: none; border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 13px;
+  color: var(--muted); font-size: 12px; font-weight: 500;
+  cursor: pointer; font-family: 'DM Sans', sans-serif;
+  transition: all 0.15s; min-height: 30px;
+}
+.select-all-btn:hover { border-color: var(--green); color: var(--navy); }
+.select-all-btn.all-selected {
+  border-color: var(--green); color: var(--green-dark); background: var(--green-faint);
+}
+
+/* ── BRAND GRID ───────────────────────────────────────────── */
+.brands-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+  gap: 10px;
+}
+
+/* ── BRAND CARD ───────────────────────────────────────────── */
+.brand-card {
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 14px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  position: relative;
+  user-select: none; -webkit-user-select: none;
+  display: flex; flex-direction: column; gap: 6px;
+  overflow: hidden;
+}
+.brand-card:hover {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px rgba(0,222,157,0.10);
+  transform: translateY(-1px);
+}
+.brand-card:active { transform: scale(0.97); }
+.brand-card.selected {
+  border-color: var(--green);
+  background: var(--green-faint);
+  box-shadow: 0 0 0 3px rgba(0,222,157,0.15);
+}
+
+/* check */
+.check-circle {
+  width: 21px; height: 21px; border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  position: absolute; top: 11px; right: 11px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; flex-shrink: 0;
+  z-index: 2;
+}
+.brand-card.selected .check-circle { background: var(--green); border-color: var(--green); }
+.check-icon { display: none; }
+.brand-card.selected .check-icon { display: block; }
+
+/* badge / name */
+.card-badge {
+  width: 34px; height: 34px; border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 500;
+  flex-shrink: 0;
+}
+.brand-name {
+  font-size: 13px; font-weight: 600; color: var(--navy);
+  line-height: 1.35; padding-right: 26px;
+}
+.brand-sub { font-size: 11px; color: var(--muted); }
+
+/* ── OPEN OVERLAY (hover on desktop / long-press on mobile) ─ */
+.open-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 36, 63, 0.82);
+  border-radius: calc(var(--radius-md) - 1px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px;
+  opacity: 0;
+  transition: opacity 0.18s;
+  z-index: 10;
+  pointer-events: none;
+}
+/* desktop hover */
+@media (hover: hover) {
+  .brand-card:hover .open-overlay {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+/* mobile: JS adds .show-overlay class on long-press */
+.brand-card.show-overlay .open-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+.open-overlay-icon {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.open-overlay-label {
+  font-size: 12px; font-weight: 600; color: var(--white);
+  letter-spacing: 0.2px;
+}
+.open-overlay-hint {
+  font-size: 10px; color: rgba(255,255,255,0.5);
+}
+.open-btn {
+  position: absolute; inset: 0;
+  background: transparent; border: none; cursor: pointer;
+  border-radius: calc(var(--radius-md) - 1px);
+  z-index: 11;
+}
+
+/* ── STATES ───────────────────────────────────────────────── */
+.loading-state {
+  text-align: center; padding: 70px 20px; color: var(--muted); font-size: 14px;
+}
+.dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); animation: pulse 1.2s ease-in-out infinite; margin: 0 3px;
+}
+.dot:nth-child(2) { animation-delay: .2s; }
+.dot:nth-child(3) { animation-delay: .4s; }
+@keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8);}50%{opacity:1;transform:scale(1.1);} }
+.empty-state {
+  text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; line-height: 1.7;
+}
+.empty-icon { font-size: 30px; margin-bottom: 12px; }
+
+/* ── HIGHLIGHT ────────────────────────────────────────────── */
+.hl { background: rgba(0,222,157,0.3); border-radius: 3px; padding: 0 2px; }
+
+/* ── BOTTOM BAR ───────────────────────────────────────────── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--navy);
+  padding: 15px 24px;
+  padding-bottom: calc(15px + env(safe-area-inset-bottom));
+  z-index: 300;
+  transform: translateY(110%);
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  border-top: 2px solid rgba(0,222,157,0.2);
+}
+.bottom-bar.visible { transform: translateY(0); }
+.bottom-inner {
+  max-width: 880px; margin: 0 auto;
+  display: flex; align-items: center;
+  justify-content: space-between; gap: 14px;
+}
+.sel-summary { color: rgba(255,255,255,0.6); font-size: 13px; line-height: 1.5; min-width: 0; flex: 1; }
+.sel-summary strong { color: var(--white); font-weight: 600; display: block; }
+.bottom-actions { display: flex; gap: 9px; align-items: center; flex-shrink: 0; }
+
+.clear-btn {
+  background: rgba(255,255,255,0.10);
+  border: 1.5px solid rgba(255,255,255,0.22);
+  border-radius: var(--radius-sm);
+  padding: 9px 17px;
+  color: var(--white);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; min-height: 40px; white-space: nowrap;
+}
+.clear-btn:hover { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4); }
+
+.copy-btn {
+  background: var(--green); border: none;
+  border-radius: var(--radius-sm);
+  padding: 9px 20px;
+  color: var(--navy);
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 7px;
+  min-height: 40px; white-space: nowrap;
+}
+.copy-btn:hover { background: #00c98e; }
+.copy-btn:active { transform: scale(0.97); }
+
+/* ── TOAST ────────────────────────────────────────────────── */
+.toast {
+  position: fixed; top: 66px; right: 16px;
+  max-width: 320px;
+  background: var(--navy); color: white;
+  padding: 10px 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 500;
+  border-left: 3px solid var(--green);
+  z-index: 500;
+  opacity: 0; transform: translateY(-8px);
+  transition: all 0.25s; pointer-events: none;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── LONG-PRESS HINT (mobile only) ───────────────────────── */
+.lp-hint {
+  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(10,36,63,0.88); color: white;
+  padding: 8px 16px; border-radius: 50px;
+  font-size: 12px; white-space: nowrap;
+  z-index: 400; opacity: 0; transition: opacity 0.3s;
+  pointer-events: none;
+}
+.lp-hint.show { opacity: 1; }
+
+/* ── MOBILE OVERRIDES ─────────────────────────────────────── */
+@media (max-width: 600px) {
+  .topbar { padding: 0 16px; height: 54px; }
+  .logo-sub { display: none; }
+  .main { padding: 18px 14px 200px; }
+  .brands-grid { grid-template-columns: 1fr 1fr; gap: 9px; }
+  .brand-card { padding: 12px 12px 10px; }
+  .card-badge { width: 30px; height: 30px; font-size: 13px; }
+  .brand-name { font-size: 12px; }
+  .bottom-inner { flex-direction: column; align-items: stretch; gap: 10px; }
+  .sel-summary { text-align: center; }
+  .bottom-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .copy-btn { justify-content: center; }
+  .clear-btn { text-align: center; }
+  .toast { right: 14px; left: 14px; max-width: none; }
+  .page-header { gap: 10px; }
+  .page-title { font-size: 18px; }
+}
+@media (max-width: 380px) {
+  .brands-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex;flex-direction:column;min-height:100vh;">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo-area">
+      <img src="mob_logo.png" style="height:34px;width:auto;" alt="MOB" />
+      <!-- To use your real logo PNG, replace the div above with:
+           <img src="logo.png" style="height:34px;width:auto;" alt="MOB" />  -->
+      <div>
+        <div class="logo-text">Mad Over Buildings</div>
+        <div class="logo-sub">Catalogue Hub</div>
+      </div>
+    </div>
+    <button class="cart-btn" id="cart-btn">
+      Selected <span class="cart-badge" id="cart-count">0</span>
+    </button>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Share Catalogues</div>
+        <div class="page-sub">Select → Copy → Paste on WhatsApp</div>
+      </div>
+      <button class="refresh-btn" id="refresh-btn" onclick="refreshSheet()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+          <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
+
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" fill="none" stroke="#7A90A4" stroke-width="2" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input class="search-input" id="search-input"
+        placeholder="Search brands or catalogues..."
+        oninput="onSearch(this.value)" autocomplete="off" />
+      <button class="search-clear" id="search-clear" onclick="clearSearch()">✕</button>
+    </div>
+
+    <div class="tabs-row" id="tabs-row"></div>
+    <div id="content-area">
+      <div class="loading-state">
+        <div><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+        <div style="margin-top:16px;">Loading catalogues...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div class="bottom-bar" id="bottom-bar">
+    <div class="bottom-inner">
+      <div class="sel-summary" id="sel-summary"></div>
+      <div class="bottom-actions">
+        <button class="clear-btn" onclick="clearAll()">Clear all</button>
+        <button class="copy-btn" id="copy-btn" onclick="copyMessage()">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2"/>
+            <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+          </svg>
+          Copy Message
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <!-- LONG PRESS HINT (shown once on first mobile visit) -->
+  <div class="lp-hint" id="lp-hint">Hold a card to open the catalogue</div>
+
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONFIG — paste your Google Sheet CSV URL below
+   Sheet columns: Category | Brand | Catalogue Name | Link
+   ═══════════════════════════════════════════════════════════ */
+const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTsSvDanlWLesPkOqLT0MIJ7DqHLXAuY8AeCea6JXRTrkYrJW7oe8FQRCM91pQJ5VhYFZjR-QyuVHG_/pub?output=csv";
+/* How to get it:
+   Google Sheet → File → Share → Publish to web
+   → Sheet1 → CSV → Publish → Copy the URL
+   Then paste it above, replacing the placeholder text.       */
+
+/* ── COLOUR PALETTE for category badges ─────────────────── */
+const PALETTE = [
+  { bg:"#EBF9F4", fg:"#00A876" },
+  { bg:"#EEF2FF", fg:"#4338CA" },
+  { bg:"#FFF7ED", fg:"#C2610C" },
+  { bg:"#FDF2F8", fg:"#BE185D" },
+  { bg:"#F0F9FF", fg:"#0369A1" },
+  { bg:"#ECFDF5", fg:"#047857" },
+  { bg:"#FEFCE8", fg:"#854D0E" },
+  { bg:"#FFF1F2", fg:"#BE123C" },
+  { bg:"#F5F3FF", fg:"#6D28D9" },
+  { bg:"#ECFEFF", fg:"#0E7490" },
+];
+let catColors = {}, paletteIdx = 0;
+function catColor(cat) {
+  if (!catColors[cat]) { catColors[cat] = PALETTE[paletteIdx++ % PALETTE.length]; }
+  return catColors[cat];
+}
+function catInitial(cat) { return (cat||'?').trim().charAt(0).toUpperCase(); }
+
+/* ── STATE ───────────────────────────────────────────────── */
+let allData    = [];
+let selected   = new Set();
+let activeTab  = "All";
+let searchQ    = "";
+let hintShown  = false;
+
+/* ── SHEET LOADING ───────────────────────────────────────── */
+async function loadSheet(isRefresh) {
+  const btn = document.getElementById('refresh-btn');
+  if (isRefresh) { btn.classList.add('spinning'); btn.disabled = true; }
+
+  try {
+    const resp = await fetch(SHEET_CSV_URL + "&t=" + Date.now());
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const text = await resp.text();
+    const parsed = parseCSV(text);
+    if (!parsed.length) throw new Error("empty sheet");
+    allData = parsed;
+    catColors = {}; paletteIdx = 0;
+    if (isRefresh) showToast("✓ Refreshed — " + allData.length + " catalogues loaded");
+  } catch(e) {
+    if (!allData.length) {
+      document.getElementById('content-area').innerHTML =
+        `<div class="empty-state">
+          <div class="empty-icon">⚠️</div>
+          <strong style="color:var(--navy)">Could not load catalogues</strong><br>
+          <span style="font-size:12px;">Check that the Sheet is published and the URL is correct.<br>
+          Then hit Refresh.</span>
+        </div>`;
+      if (isRefresh) { btn.classList.remove('spinning'); btn.disabled = false; }
+      return;
+    }
+    if (isRefresh) showToast("Could not refresh — showing cached data");
+  }
+
+  if (isRefresh) { btn.classList.remove('spinning'); btn.disabled = false; }
+  render();
+}
+function refreshSheet() { loadSheet(true); }
+
+/* ── CSV PARSER ──────────────────────────────────────────── */
+function parseCSV(raw) {
+  const lines = raw.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = splitLine(lines[0]).map(h => h.replace(/^"|"$/g,'').trim());
+  return lines.slice(1).map(line => {
+    const vals = splitLine(line).map(v => v.replace(/^"|"$/g,'').trim());
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  }).filter(r => r.Category && r.Brand && r.Link);
+}
+function splitLine(line) {
+  const out=[]; let cur=''; let q=false;
+  for (const ch of line) {
+    if (ch==='"') { q=!q; }
+    else if (ch===',' && !q) { out.push(cur); cur=''; }
+    else { cur+=ch; }
+  }
+  out.push(cur); return out;
+}
+
+/* ── KEY ─────────────────────────────────────────────────── */
+function getKey(r) {
+  return r.Category + '||' + r.Brand + '||' + (r['Catalogue Name']||r.Brand);
+}
+
+/* ── FILTER ──────────────────────────────────────────────── */
+function filtered() {
+  if (!searchQ) return allData;
+  const q = searchQ.toLowerCase();
+  return allData.filter(r =>
+    r.Brand.toLowerCase().includes(q) ||
+    (r['Catalogue Name']||'').toLowerCase().includes(q) ||
+    r.Category.toLowerCase().includes(q)
+  );
+}
+
+/* ── HIGHLIGHT ───────────────────────────────────────────── */
+function hl(text, q) {
+  if (!q || !text) return text||'';
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i < 0) return text;
+  return text.slice(0,i)+'<span class="hl">'+text.slice(i,i+q.length)+'</span>'+text.slice(i+q.length);
+}
+
+/* ── SEARCH HANDLERS ─────────────────────────────────────── */
+function onSearch(val) {
+  searchQ = val.trim();
+  document.getElementById('search-clear').classList.toggle('show', searchQ.length > 0);
+  activeTab = "All";
+  render();
+}
+function clearSearch() {
+  document.getElementById('search-input').value = '';
+  searchQ = '';
+  document.getElementById('search-clear').classList.remove('show');
+  render();
+}
+function switchTab(t) {
+  activeTab = t; searchQ = '';
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear').classList.remove('show');
+  render();
+}
+
+/* ── RENDER ──────────────────────────────────────────────── */
+function render() {
+  const cats = [...new Set(allData.map(r => r.Category))];
+  cats.forEach(c => catColor(c)); // pre-assign colors in sheet order
+
+  /* Tabs */
+  const tabsRow = document.getElementById('tabs-row');
+  if (searchQ) {
+    tabsRow.innerHTML = '';
+  } else {
+    tabsRow.innerHTML =
+      `<button class="tab ${activeTab==='All'?'active':''}" onclick="switchTab('All')">All</button>` +
+      cats.map(c =>
+        `<button class="tab ${activeTab===c?'active':''}" onclick="switchTab(${JSON.stringify(c)})">${c}</button>`
+      ).join('');
+  }
+
+  /* Content */
+  const fd = filtered();
+  const area = document.getElementById('content-area');
+
+  if (!allData.length) return; // handled by loadSheet error path
+
+  if (!fd.length) {
+    area.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div>No results for "<strong>${searchQ}</strong>"</div>`;
+    updateBar(); return;
+  }
+
+  const visCats = searchQ
+    ? [...new Set(fd.map(r => r.Category))]
+    : (activeTab === 'All' ? cats : cats.filter(c => c === activeTab));
+
+  area.innerHTML = visCats.map(cat => {
+    const items = fd.filter(r => r.Category === cat);
+    const allCatKeys = allData.filter(r => r.Category === cat).map(r => getKey(r));
+    const allSel = allCatKeys.length > 0 && allCatKeys.every(k => selected.has(k));
+    const col = catColor(cat);
+
+    return `<div class="category-section">
+      <div class="cat-header">
+        <div class="cat-title-row">
+          <div class="cat-initial" style="background:${col.bg};color:${col.fg}">${catInitial(cat)}</div>
+          <span class="cat-name">${cat}</span>
+          <span class="cat-count">${items.length}</span>
+        </div>
+        <button class="select-all-btn ${allSel?'all-selected':''}" onclick="toggleAll(${JSON.stringify(cat)})">
+          ${allSel ? '✓ All selected' : 'Select all'}
+        </button>
+      </div>
+      <div class="brands-grid">
+        ${items.map(item => renderCard(item)).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  attachLongPress();
+  updateBar();
+}
+
+function renderCard(item) {
+  const key   = getKey(item);
+  const isSel = selected.has(key);
+  const col   = catColor(item.Category);
+  const name  = item['Catalogue Name'] || item.Brand;
+  const safeKey = encodeURIComponent(key);
+
+  return `<div class="brand-card ${isSel?'selected':''}"
+      data-key="${safeKey}"
+      data-link="${encodeURIComponent(item.Link)}"
+      onclick="handleCardClick(event, '${safeKey}')">
+
+    <!-- selection check -->
+    <div class="check-circle">
+      <svg class="check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#0A243F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+
+    <!-- category badge -->
+    <div class="card-badge" style="background:${col.bg};color:${col.fg}">${catInitial(item.Category)}</div>
+
+    <!-- text -->
+    <div class="brand-name">${hl(name, searchQ)}</div>
+    <div class="brand-sub">${hl(item.Brand, searchQ)}</div>
+
+    <!-- open overlay -->
+    <div class="open-overlay">
+      <div class="open-overlay-icon">
+        <svg width="16" height="16" fill="none" stroke="#0A243F" stroke-width="2.5" viewBox="0 0 24 24">
+          <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </div>
+      <div class="open-overlay-label">Open catalogue</div>
+      <div class="open-overlay-hint">tap to open in browser</div>
+      <button class="open-btn" onclick="openCatalogue(event, '${safeKey}')"></button>
+    </div>
+
+  </div>`;
+}
+
+/* ── CARD INTERACTION ────────────────────────────────────── */
+function handleCardClick(e, safeKey) {
+  // If the open overlay button triggered this, openCatalogue handles it
+  if (e.target.classList.contains('open-btn')) return;
+  // If overlay is visible (mobile long-press), close it instead
+  const card = e.currentTarget;
+  if (card.classList.contains('show-overlay')) {
+    card.classList.remove('show-overlay');
+    return;
+  }
+  toggleItem(safeKey);
+}
+
+function toggleItem(safeKey) {
+  const key = decodeURIComponent(safeKey);
+  if (selected.has(key)) selected.delete(key);
+  else selected.add(key);
+  // update card visually without full re-render
+  const card = document.querySelector(`[data-key="${safeKey}"]`);
+  if (card) {
+    card.classList.toggle('selected', selected.has(key));
+  }
+  updateBar();
+}
+
+function openCatalogue(e, safeKey) {
+  e.stopPropagation();
+  const card = document.querySelector(`[data-key="${safeKey}"]`);
+  const link = decodeURIComponent(card?.dataset.link || '');
+  if (link) window.open(link, '_blank', 'noopener');
+  // close overlay on mobile
+  if (card) card.classList.remove('show-overlay');
+}
+
+/* ── LONG PRESS (mobile) ─────────────────────────────────── */
+let lpTimer = null;
+let lpTarget = null;
+
+function attachLongPress() {
+  document.querySelectorAll('.brand-card').forEach(card => {
+    card.addEventListener('touchstart', onTouchStart, { passive: true });
+    card.addEventListener('touchend',   onTouchEnd,   { passive: true });
+    card.addEventListener('touchmove',  onTouchMove,  { passive: true });
+  });
+}
+
+function onTouchStart(e) {
+  lpTarget = e.currentTarget;
+  lpTimer = setTimeout(() => {
+    if (!lpTarget) return;
+    // close any other open overlays
+    document.querySelectorAll('.brand-card.show-overlay').forEach(c => {
+      if (c !== lpTarget) c.classList.remove('show-overlay');
+    });
+    lpTarget.classList.add('show-overlay');
+    showLongPressHint();
+  }, 480);
+}
+function onTouchEnd()  { clearTimeout(lpTimer); lpTarget = null; }
+function onTouchMove() { clearTimeout(lpTimer); lpTarget = null; }
+
+function showLongPressHint() {
+  if (hintShown) return;
+  hintShown = true;
+  const hint = document.getElementById('lp-hint');
+  hint.classList.add('show');
+  setTimeout(() => hint.classList.remove('show'), 2800);
+}
+
+/* ── SELECT ALL / CLEAR ──────────────────────────────────── */
+function toggleAll(cat) {
+  const items = allData.filter(r => r.Category === cat);
+  const keys  = items.map(r => getKey(r));
+  const allSel = keys.every(k => selected.has(k));
+  keys.forEach(k => allSel ? selected.delete(k) : selected.add(k));
+  render();
+}
+function clearAll() { selected.clear(); render(); }
+
+/* ── BOTTOM BAR ──────────────────────────────────────────── */
+function updateBar() {
+  const bar     = document.getElementById('bottom-bar');
+  const countEl = document.getElementById('cart-count');
+  const summary = document.getElementById('sel-summary');
+  const n = selected.size;
+  countEl.textContent = n;
+  if (n === 0) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+  const catMap = {};
+  selected.forEach(key => {
+    const [cat] = key.split('||');
+    catMap[cat] = (catMap[cat]||0) + 1;
+  });
+  const breakdown = Object.entries(catMap).map(([c,v]) => `${v} ${c}`).join(' · ');
+  summary.innerHTML = `<strong>${n} catalogue${n>1?'s':''} selected</strong>${breakdown}`;
+}
+
+/* ── MESSAGE BUILDER ─────────────────────────────────────── */
+function buildMessage() {
+  const byCat = {};
+  selected.forEach(key => {
+    const item = allData.find(r => getKey(r) === key);
+    if (!item) return;
+    if (!byCat[item.Category]) byCat[item.Category] = [];
+    byCat[item.Category].push(item);
+  });
+  const hasSanitary = !!byCat["Sanitaryware"];
+  const hasOther    = Object.keys(byCat).some(c => c !== "Sanitaryware");
+  const multiCat    = Object.keys(byCat).length > 1;
+
+  let lines = ["Hi, Please find the catalogues below:\n"];
+  Object.entries(byCat).forEach(([cat, items]) => {
+    if (multiCat) lines.push(`*${cat}*`);
+    items.forEach(item => lines.push(`${item['Catalogue Name']||item.Brand}: ${item.Link}`));
+    lines.push('');
+  });
+
+  if (hasSanitary && hasOther) {
+    lines.push("For *Sanitaryware* — kindly share the *product codes* of the items you're interested in.");
+    lines.push("For other products — please share the *products you're interested in* so we can get you the *lowest possible prices*. 🙏");
+  } else if (hasSanitary) {
+    lines.push("Kindly share the *product codes* of items you're interested in so we can share the *lowest possible prices*. 🙏");
+  } else {
+    lines.push("Kindly share the *products you're interested in* so we can get you the *lowest possible prices*. 🙏");
+  }
+  return lines.join('\n');
+}
+
+/* ── COPY ────────────────────────────────────────────────── */
+function copyMessage() {
+  if (!selected.size) return;
+  const msg = buildMessage();
+  const btn = document.getElementById('copy-btn');
+  const done = () => {
+    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> Copied!`;
+    showToast("✓ Message copied — paste it on WhatsApp");
+    setTimeout(() => {
+      btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Message`;
+    }, 2500);
+  };
+  navigator.clipboard.writeText(msg).then(done).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = msg;
+    ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0;width:1px;height:1px;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e){}
+    document.body.removeChild(ta);
+    done();
+  });
+}
+
+/* ── TOAST ───────────────────────────────────────────────── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── BOOT ────────────────────────────────────────────────── */
+loadSheet(false);
+</script>
+</body>
+</html>
