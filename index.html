@@ -597,6 +597,17 @@ function render() {
 
   updateBar();
 }
+document.getElementById('content-area').addEventListener('click', function(e) {
+  const selectZone = e.target.closest('[data-action="select"]');
+  const openZone   = e.target.closest('[data-action="open"]');
+  if (selectZone) {
+    const card = selectZone.closest('.brand-card');
+    toggleItem(card.dataset.key);
+  } else if (openZone) {
+    const card = openZone.closest('.brand-card');
+    openLink(card.dataset.link);
+  }
+});
 
 /* ── RENDER CARD ─────────────────────────────────────── */
 function renderCard(item) {
@@ -608,10 +619,10 @@ function renderCard(item) {
   const ek     = encodeURIComponent(key);
   const el     = encodeURIComponent(item.Link);
 
-  return `<div class="brand-card ${isSel?'selected':''}" data-key="${ek}">
+  return `<div class="brand-card ${isSel?'selected':''}" data-key="${ek}" data-link="${el}">
 
     <!-- TOP: select zone -->
-    <div class="card-select-zone" onclick="toggleItem(${JSON.stringify(ek)})">
+    <div class="card-select-zone" data-action="select">
       <div class="check-circle">
         <svg class="check-icon" width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="M1.5 5L4 7.5L8.5 2.5" stroke="#0A243F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
@@ -623,7 +634,7 @@ function renderCard(item) {
     </div>
 
     <!-- BOTTOM: open zone — always visible strip -->
-    <div class="card-open-zone" onclick="openLink(${JSON.stringify(el)})">
+    <div class="card-open-zone" data-action="open">
       <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/>
         <polyline points="15 3 21 3 21 9"/>
