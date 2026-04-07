@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>MOB Catalogue Hub</title>
+<link rel="icon" type="image/png" href="mob_logo.png" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -556,8 +557,8 @@ function render() {
     tabsRow.innerHTML = '';
   } else {
     tabsRow.innerHTML =
-      `<button class="tab ${activeTab==='All'?'active':''}" onclick="switchTab('All')">All</button>` +
-      cats.map(c => `<button class="tab ${activeTab===c?'active':''}" onclick="switchTab(${JSON.stringify(c)})">${c}</button>`).join('');
+      `<button class="tab ${activeTab==='All'?'active':''}" data-action="alltab">All</button>` +
+      cats.map(c => `<button class="tab ${activeTab===c?'active':''}" data-action="tab" data-cat="${encodeURIComponent(c)}">${c}</button>`).join('');
   }
 
   const fd = filtered();
@@ -585,7 +586,7 @@ function render() {
           <span class="cat-name">${cat}</span>
           <span class="cat-count">${items.length}</span>
         </div>
-        <button class="select-all-btn ${allSel?'all-selected':''}" onclick="toggleAll(${JSON.stringify(cat)})">
+        <button class="select-all-btn ${allSel?'all-selected':''}" data-action="selectall" data-cat="${encodeURIComponent(cat)}">
           ${allSel ? '✓ All selected' : 'Select all'}
         </button>
       </div>
@@ -598,15 +599,25 @@ function render() {
   updateBar();
 }
 document.getElementById('content-area').addEventListener('click', function(e) {
-  const selectZone = e.target.closest('[data-action="select"]');
-  const openZone   = e.target.closest('[data-action="open"]');
+  const selectZone  = e.target.closest('[data-action="select"]');
+  const openZone    = e.target.closest('[data-action="open"]');
+  const selectAllBtn = e.target.closest('[data-action="selectall"]');
   if (selectZone) {
     const card = selectZone.closest('.brand-card');
     toggleItem(card.dataset.key);
   } else if (openZone) {
     const card = openZone.closest('.brand-card');
     openLink(card.dataset.link);
+  } else if (selectAllBtn) {
+    toggleAll(decodeURIComponent(selectAllBtn.dataset.cat));
   }
+});
+
+document.getElementById('tabs-row').addEventListener('click', function(e) {
+  const tab = e.target.closest('[data-action="tab"]');
+  if (tab) switchTab(decodeURIComponent(tab.dataset.cat));
+  const allTab = e.target.closest('[data-action="alltab"]');
+  if (allTab) switchTab('All');
 });
 
 /* ── RENDER CARD ─────────────────────────────────────── */
@@ -708,23 +719,29 @@ function buildMessage() {
     if (!byCat[item.Category]) byCat[item.Category] = [];
     byCat[item.Category].push(item);
   });
-  const hasSanitary = !!byCat["Sanitaryware"];
-  const hasOther    = Object.keys(byCat).some(c => c !== "Sanitaryware");
+
+  const hasSanitary = Object.keys(byCat).some(c => c.toLowerCase().includes('sanitaryware'));
+  const hasOther    = Object.keys(byCat).some(c => !c.toLowerCase().includes('sanitaryware'));
   const multiCat    = Object.keys(byCat).length > 1;
-  let lines = ["Hi, Please find the catalogues below:\n"];
+
+  let lines = ["Hi, Please find the catalogue" + (selected.size > 1 ? "s" : "") + " below:\n"];
+
   Object.entries(byCat).forEach(([cat, items]) => {
     if (multiCat) lines.push(`*${cat}*`);
     items.forEach(item => lines.push(`${item['Catalogue Name']||item.Brand}: ${item.Link}`));
     lines.push('');
   });
+
   if (hasSanitary && hasOther) {
     lines.push("For *Sanitaryware* — kindly share the *product codes* of the items you're interested in.");
-    lines.push("For other products — please share the *products you're interested in* so we can get you the *lowest possible prices*. 🙏");
+    lines.push("For other products — kindly share the *product name, image, or reference* of the items you're interested in.");
+    lines.push("We'll share the lowest possible prices for the same. ");
   } else if (hasSanitary) {
-    lines.push("Kindly share the *product codes* of items you're interested in so we can share the *lowest possible prices*. 🙏");
+    lines.push("Kindly share the *product codes* of the items you're interested in, and we'll share the lowest possible prices for the same.");
   } else {
-    lines.push("Kindly share the *products you're interested in* so we can get you the *lowest possible prices*. 🙏");
+    lines.push("Kindly share the *product name, image, or reference* of the items you're interested in, and we'll share the lowest possible prices for the same.");
   }
+
   return lines.join('\n');
 }
 
